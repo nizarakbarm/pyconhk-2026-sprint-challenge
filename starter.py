@@ -12,13 +12,11 @@ from support.proof import GAME_SEED, ContactDetails, write_proof
 # Please modify only the following function.
 async def build_report(login: str, clue: str) -> list[Event]:
     """Keep the first occurrence of each event and sort by minute, room, and ID."""
-    records: list[Event] = []
-    for room in ROOMS:
-        # TODO: Wait for the room's records before adding them to the report.
-        room_events = load_room(login, clue, room)
-        records.extend(room_events)
-    # TODO: Keep the earliest record per event ID, using room order for ties.
-    return sorted(records)
+    rooms = await asyncio.gather(*(load_room(login, clue, room) for room in ROOMS))
+    first_seen: dict[str, Event] = {}
+    for event in sorted(e for room_events in rooms for e in room_events):
+        first_seen.setdefault(event.event_id, event)
+    return list(first_seen.values())
 
 
 def main() -> None:
